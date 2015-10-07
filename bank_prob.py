@@ -115,7 +115,7 @@ class BankProbModel:
             self.featureEncoder = data_args['featureEncoder']
 
             # get unbiased predictions on training data
-            y_pred, unbiased_prediction_args = self.get_unbiased_predictions_on_training_data(data=data)
+            y_true, y_pred, unbiased_prediction_args = self.get_unbiased_predictions_on_training_data(data=data)
 
             output_data = {}
 
@@ -126,7 +126,7 @@ class BankProbModel:
             output_data["model_definition"] = 'model_definition.json'
 
             # save scores.json
-            scores, out_args = self.get_scores(data=data, predicted_values=y_pred, data_args=data_args)
+            scores, out_args = self.get_scores(data=data, true_values=y_true, predicted_values=y_pred, data_args=data_args)
             path = os.path.join(output_files_dir, "scores.json")
             self.save_json_file(dict_to_save=scores, path=path)
             output_data["scores"] = 'scores.json'
@@ -293,7 +293,7 @@ class BankProbModel:
         # make unbiased predictions using nested CV
         # We will use this unbiased predictions in order to calculate the performance of the
         # algorithm using multiple scores.
-        cv = StratifiedKFold(y, n_folds=5)
+        cv = StratifiedKFold(y, n_folds=5, shuffle=True)
         for i, (train, test) in enumerate(cv):
             
             data_fold = {}
@@ -310,7 +310,7 @@ class BankProbModel:
                 y_true = np.hstack((y_true, y[test]))
                 y_pred = np.hstack((y_pred, y_test_pred))
 
-        return y_pred, out_args
+        return y_true, y_pred, out_args
     
     
     def get_model_definition(self, **kwargs):
@@ -463,7 +463,7 @@ class BankProbModel:
         """
         
         data = kwargs['data']
-        true_values = np.array(data['targets'])
+        true_values = kwargs['true_values']
         predicted_values = kwargs['predicted_values']
 
         out_args = {}
